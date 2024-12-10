@@ -74,6 +74,7 @@ func NewCache(c flag.CacheOptions) (Cache, error) {
 	}
 
 	// standalone mode
+	log.Debug("New cache - NewFSCache")
 	fsCache, err := cache.NewFSCache(fsutils.CacheDir())
 	if err != nil {
 		return Cache{}, xerrors.Errorf("unable to initialize fs cache: %w", err)

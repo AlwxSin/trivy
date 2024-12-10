@@ -10,6 +10,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/aquasecurity/trivy/pkg/fanal/types"
+	"github.com/aquasecurity/trivy/pkg/log"
 )
 
 var _ Cache = &FSCache{}
@@ -21,15 +22,18 @@ type FSCache struct {
 
 func NewFSCache(cacheDir string) (FSCache, error) {
 	dir := filepath.Join(cacheDir, cacheDirName)
+	log.Debug("NewFSCache - create dirs")
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return FSCache{}, xerrors.Errorf("failed to create cache dir: %w", err)
 	}
 
+	log.Debug("NewFSCache - bolt open")
 	db, err := bolt.Open(filepath.Join(dir, "fanal.db"), 0600, nil)
 	if err != nil {
 		return FSCache{}, xerrors.Errorf("unable to open DB: %w", err)
 	}
 
+	log.Debug("NewFSCache - bolt update")
 	err = db.Update(func(tx *bolt.Tx) error {
 		for _, bucket := range []string{artifactBucket, blobBucket} {
 			if _, err := tx.CreateBucketIfNotExists([]byte(bucket)); err != nil {

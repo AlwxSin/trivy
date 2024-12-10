@@ -115,18 +115,24 @@ func WithCacheClient(c cache.Cache) runnerOption {
 // It is possible to return SkipScan and it must be handled by caller.
 func NewRunner(ctx context.Context, cliOptions flag.Options, opts ...runnerOption) (Runner, error) {
 	r := &runner{}
+	log.Debug("New Runner")
 	for _, opt := range opts {
 		opt(r)
 	}
+	log.Debug("Opts for New Runner completed")
 
+	log.Debug("New Runner init cache")
 	if err := r.initCache(cliOptions); err != nil {
 		return nil, xerrors.Errorf("cache error: %w", err)
 	}
+	log.Debug("New Runner init cache complete")
 
 	// Update the vulnerability database if needed.
+	log.Debug("New Runner init db")
 	if err := r.initDB(ctx, cliOptions); err != nil {
 		return nil, xerrors.Errorf("DB error: %w", err)
 	}
+	log.Debug("New Runner init db complete")
 
 	// Initialize WASM modules
 	m, err := module.NewManager(ctx, module.Options{
@@ -341,18 +347,22 @@ func (r *runner) initJavaDB(opts flag.Options) error {
 func (r *runner) initCache(opts flag.Options) error {
 	// Skip initializing cache when custom cache is passed
 	if r.cache != nil {
+		log.Debug("init cache - cache is nil")
 		return nil
 	}
 
 	// client/server mode
 	if opts.ServerAddr != "" {
+		log.Debug("init cache - remote cache")
 		remoteCache := tcache.NewRemoteCache(opts.ServerAddr, opts.CustomHeaders, opts.Insecure)
 		r.cache = tcache.NopCache(remoteCache)
 		return nil
 	}
 
 	// standalone mode
+	log.Debug("init cache - set cache dir")
 	fsutils.SetCacheDir(opts.CacheDir)
+	log.Debug("init cache - set new cache")
 	cacheClient, err := operation.NewCache(opts.CacheOptions)
 	if err != nil {
 		return xerrors.Errorf("unable to initialize the cache: %w", err)
